@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Weather App</title>
+    {% csrf_token %}
+    <script src="https://unpkg.com/htmx.org@1.9.10"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Base styles */
+        .weather-bg {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            background-size: cover;
+            background-position: center;
+            transition: background-image 1s ease-in-out;
+        }
+
+        /* Time-based backgrounds */
+        .bg-morning {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+                url('https://images.unsplash.com/photo-1470252649378-9c29740c9fa8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+        }
+
+        .bg-afternoon {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+                url('https://images.unsplash.com/photo-1561484930-998b6a7b22e8?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+        }
+
+        .bg-evening {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+                url('https://images.unsplash.com/photo-1472120435266-53107fd0c44a?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+        }
+
+        .bg-night {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                url('https://images.unsplash.com/photo-1507400492013-162706c8c05e?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+        }
+
+        /* Weather condition backgrounds */
+        .bg-clear {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+                url('https://images.unsplash.com/photo-1601297183305-6df142704ea2?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+        }
+
+        .bg-clouds {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+                url('https://images.unsplash.com/photo-1534088568595-a066f410bcda?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+        }
+
+        .bg-rain {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.4), rgba(0, 0, 0, 0.4)),
+                url('https://images.unsplash.com/photo-1519692933481-e162a57d6721?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+        }
+
+        .bg-snow {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+                url('https://images.unsplash.com/photo-1491002052546-bf38f186af56?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+        }
+
+        .bg-thunderstorm {
+            background-image: linear-gradient(rgba(0, 0, 0, 0.5), rgba(0, 0, 0, 0.5)),
+                url('https://images.unsplash.com/photo-1605727216801-e27ce1d0cc28?ixlib=rb-4.0.3&auto=format&fit=crop&w=1950&q=80');
+        }
+
+        /* Weather effects */
+        .rain-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAQAAAAECAYAAACp8Z5+AAAARklEQVQIW2NITUv7j4wZGBj+R0dH/2dkZGQACYA4IAGQACMjRACsAqsAToOV4XADTj+ABMA6wAJgp4MFwE6HCEAEwKYDAE5mI4Qts0UxAAAAAElFTkSuQmCC') repeat;
+            animation: rain 0.3s linear infinite;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        .snow-effect {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAYAAADED76LAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAAD1JREFUeNpiYGBg+M+ABzAxQADIBLLxAaA8XsFPIMAqCFYBVvgfCL4yQAFYxX+w4H8GqApGqApGdBUAAQYAcUYW4YDB5H4AAAAASUVORK5CYII=') repeat;
+            animation: snow 3s linear infinite;
+            opacity: 0.7;
+            pointer-events: none;
+        }
+
+        @keyframes rain {
+            0% { background-position: 0 0; }
+            100% { background-position: 0 20px; }
+        }
+
+        @keyframes snow {
+            0% { background-position: 0 0; }
+            100% { background-position: 10px 20px; }
+        }
+
+        /* Glass effect */
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+
+        /* Content styles */
+        .content-container {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+    </style>
+</head>
+<body>
+    <div id="weather-bg" class="weather-bg">
+        <div id="weather-effect"></div>
+        
+        <nav class="glass-effect text-white py-4">
+            <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+                <div class="flex items-center justify-between">
+                    <a href="{% url 'weather:home' %}" class="text-2xl font-bold">
+                        ⛅ Weather App
+                    </a>
+                    <div class="flex items-center space-x-4">
+                        <div class="text-lg" id="current-time"></div>
+                        {% if request.user.is_authenticated %}
+                            <div class="flex items-center space-x-2">
+                                <span class="text-sm">Welcome, {{ request.user.username }}</span>
+                                <a href="{% url 'weather:favorites' %}" class="text-sm text-blue-300 hover:text-blue-200">Favorites</a>
+                                <a href="{% url 'weather:logout' %}" class="text-sm text-blue-300 hover:text-blue-200">Logout</a>
+                            </div>
+                        {% else %}
+                            <div class="flex items-center space-x-2">
+                                <a href="{% url 'weather:login' %}" class="text-sm text-blue-300 hover:text-blue-200">Login</a>
+                                <a href="{% url 'weather:register' %}" class="text-sm text-blue-300 hover:text-blue-200">Register</a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </nav>
+
+        <main class="flex-grow container mx-auto px-4 py-8">
+            <div class="content-container">
+                {% block content %}
+                {% endblock %}
+            </div>
+        </main>
+
+        <footer class="glass-effect text-white py-4 mt-auto">
+            <div class="container mx-auto px-4 text-center">
+                <p>Weather App @ 2025</p>
+            </div>
+        </footer>
+    </div>
+
+    <script>
+        function updateBackground() {
+            const hour = new Date().getHours();
+            const weatherBg = document.getElementById('weather-bg');
+            const weatherEffect = document.getElementById('weather-effect');
+            
+            // Remove all existing classes
+            weatherBg.className = 'weather-bg';
+            weatherEffect.className = '';
+
+            // Add time-based background first
+            if (hour >= 5 && hour < 11) {
+                weatherBg.classList.add('bg-morning');
+            } else if (hour >= 11 && hour < 16) {
+                weatherBg.classList.add('bg-afternoon');
+            } else if (hour >= 16 && hour < 20) {
+                weatherBg.classList.add('bg-evening');
+            } else {
+                weatherBg.classList.add('bg-night');
+            }
+
+            // Add weather-based effects only if weather description exists
+            const weatherDescription = document.querySelector('.weather-description');
+            if (weatherDescription) {
+                const weather = weatherDescription.textContent.toLowerCase();
+                
+                // Add weather effects first
+                if (weather.includes('rain') || weather.includes('drizzle')) {
+                    weatherEffect.classList.add('rain-effect');
+                } else if (weather.includes('snow')) {
+                    weatherEffect.classList.add('snow-effect');
+                }
+
+                // Then add weather-based backgrounds
+                if (weather.includes('rain') || weather.includes('drizzle')) {
+                    weatherBg.classList.add('bg-rain');
+                } else if (weather.includes('snow')) {
+                    weatherBg.classList.add('bg-snow');
+                } else if (weather.includes('thunder')) {
+                    weatherBg.classList.add('bg-thunderstorm');
+                } else if (weather.includes('cloud')) {
+                    weatherBg.classList.add('bg-clouds');
+                } else if (weather.includes('clear')) {
+                    weatherBg.classList.add('bg-clear');
+                }
+            }
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const timeElement = document.getElementById('current-time');
+            timeElement.textContent = now.toLocaleString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        }
+
+        // Initial updates
+        updateBackground();
+        updateTime();
+
+        // Update time every minute
+        setInterval(updateTime, 60000);
+
+        // Update background every 5 minutes
+        setInterval(updateBackground, 300000);
+
+        // Update background when weather changes
+        document.addEventListener('htmx:afterSwap', function(event) {
+            updateBackground();
+        });
+    </script>
+</body>
+</html> 

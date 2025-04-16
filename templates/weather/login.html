@@ -1,0 +1,168 @@
+{% extends 'weather/base.html' %}
+
+{% block content %}
+<div class="max-w-md mx-auto">
+    <div class="glass-effect rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-white mb-6 text-center">Login</h2>
+        
+        {% if error_message %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg mb-4">
+            <p class="font-bold">{{ error_message }}</p>
+            {% if errors %}
+            <ul class="list-disc list-inside mt-2">
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <form method="POST" action="{% url 'weather:login' %}" class="space-y-4" id="login-form">
+            {% csrf_token %}
+            <div>
+                <label for="username" class="block text-sm font-medium text-white">Username</label>
+                <input type="text" 
+                       name="username" 
+                       id="username" 
+                       class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+                       value="{{ username|default:'' }}"
+                       required
+                       minlength="3"
+                       maxlength="150"
+                       pattern="[a-zA-Z0-9_]+"
+                       title="Username must be 3-150 characters long and can only contain letters, numbers, and underscores">
+                <div class="text-xs text-gray-300 mt-1" id="username-error"></div>
+            </div>
+            <div>
+                <label for="password" class="block text-sm font-medium text-white">Password</label>
+                <input type="password" 
+                       name="password" 
+                       id="password" 
+                       class="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500" 
+                       required
+                       minlength="8"
+                       title="Password must be at least 8 characters long">
+                <div class="text-xs text-gray-300 mt-1" id="password-error"></div>
+            </div>
+            <div class="flex items-center">
+                <input type="checkbox" 
+                       name="remember" 
+                       id="remember" 
+                       class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded">
+                <label for="remember" class="ml-2 block text-sm text-white">
+                    Remember me
+                </label>
+            </div>
+            <button type="submit" 
+                    class="w-full flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                Sign In
+            </button>
+        </form>
+        
+        <div class="mt-4 text-center">
+            <p class="text-sm text-white">
+                Don't have an account? 
+                <a href="{% url 'weather:register' %}" class="font-medium text-blue-300 hover:text-blue-200">
+                    Register here
+                </a>
+            </p>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const form = document.getElementById('login-form');
+        const usernameInput = document.getElementById('username');
+        const passwordInput = document.getElementById('password');
+        const usernameError = document.getElementById('username-error');
+        const passwordError = document.getElementById('password-error');
+        
+        // Username validation
+        usernameInput.addEventListener('input', function() {
+            const username = this.value.trim();
+            
+            if (!username) {
+                usernameError.textContent = 'Username is required';
+                this.setCustomValidity('Username is required');
+            } else if (username.length < 3) {
+                usernameError.textContent = 'Username must be at least 3 characters long';
+                this.setCustomValidity('Username must be at least 3 characters long');
+            } else if (username.length > 150) {
+                usernameError.textContent = 'Username is too long';
+                this.setCustomValidity('Username is too long');
+            } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                usernameError.textContent = 'Username can only contain letters, numbers, and underscores';
+                this.setCustomValidity('Username can only contain letters, numbers, and underscores');
+            } else {
+                usernameError.textContent = '';
+                this.setCustomValidity('');
+            }
+        });
+        
+        // Password validation
+        passwordInput.addEventListener('input', function() {
+            const password = this.value;
+            
+            if (!password) {
+                passwordError.textContent = 'Password is required';
+                this.setCustomValidity('Password is required');
+            } else if (password.length < 8) {
+                passwordError.textContent = 'Password must be at least 8 characters long';
+                this.setCustomValidity('Password must be at least 8 characters long');
+            } else {
+                passwordError.textContent = '';
+                this.setCustomValidity('');
+            }
+        });
+        
+        // Form submission validation
+        form.addEventListener('submit', function(event) {
+            const username = usernameInput.value.trim();
+            const password = passwordInput.value;
+            let isValid = true;
+            
+            // Username validation
+            if (!username) {
+                usernameError.textContent = 'Username is required';
+                usernameInput.setCustomValidity('Username is required');
+                isValid = false;
+            } else if (username.length < 3) {
+                usernameError.textContent = 'Username must be at least 3 characters long';
+                usernameInput.setCustomValidity('Username must be at least 3 characters long');
+                isValid = false;
+            } else if (username.length > 150) {
+                usernameError.textContent = 'Username is too long';
+                usernameInput.setCustomValidity('Username is too long');
+                isValid = false;
+            } else if (!/^[a-zA-Z0-9_]+$/.test(username)) {
+                usernameError.textContent = 'Username can only contain letters, numbers, and underscores';
+                usernameInput.setCustomValidity('Username can only contain letters, numbers, and underscores');
+                isValid = false;
+            } else {
+                usernameError.textContent = '';
+                usernameInput.setCustomValidity('');
+            }
+            
+            // Password validation
+            if (!password) {
+                passwordError.textContent = 'Password is required';
+                passwordInput.setCustomValidity('Password is required');
+                isValid = false;
+            } else if (password.length < 8) {
+                passwordError.textContent = 'Password must be at least 8 characters long';
+                passwordInput.setCustomValidity('Password must be at least 8 characters long');
+                isValid = false;
+            } else {
+                passwordError.textContent = '';
+                passwordInput.setCustomValidity('');
+            }
+            
+            if (!isValid) {
+                event.preventDefault();
+            }
+        });
+    });
+</script>
+{% endblock %} 

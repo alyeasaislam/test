@@ -1,0 +1,204 @@
+{% extends 'weather/base.html' %}
+
+{% block content %}
+<div class="max-w-md mx-auto px-4 py-8">
+    <div class="glass-effect rounded-lg shadow-lg p-6">
+        <h2 class="text-2xl font-bold text-white mb-6 text-center">Register</h2>
+        
+        {% if error_message %}
+        <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg mb-6">
+            <p class="font-bold">{{ error_message }}</p>
+            {% if errors %}
+            <ul class="list-disc list-inside mt-2">
+                {% for error in errors %}
+                <li>{{ error }}</li>
+                {% endfor %}
+            </ul>
+            {% endif %}
+        </div>
+        {% endif %}
+        
+        <form method="POST" action="{% url 'weather:register' %}" class="space-y-4" id="registerForm">
+            {% csrf_token %}
+            <div>
+                <label for="username" class="block text-white text-sm font-medium mb-1">Username</label>
+                <input type="text" 
+                       id="username" 
+                       name="username" 
+                       value="{{ username|default:'' }}"
+                       class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       required
+                       minlength="3"
+                       maxlength="150"
+                       pattern="[a-zA-Z0-9_]+"
+                       title="Username can only contain letters, numbers, and underscores">
+                <div id="usernameError" class="text-red-500 text-sm mt-1 hidden"></div>
+            </div>
+            <div>
+                <label for="email" class="block text-white text-sm font-medium mb-1">Email</label>
+                <input type="email" 
+                       id="email" 
+                       name="email" 
+                       value="{{ email|default:'' }}"
+                       class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       required>
+                <div id="emailError" class="text-red-500 text-sm mt-1 hidden"></div>
+            </div>
+            <div>
+                <label for="password" class="block text-white text-sm font-medium mb-1">Password</label>
+                <input type="password" 
+                       id="password" 
+                       name="password" 
+                       class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       required
+                       minlength="8">
+                <div id="passwordError" class="text-red-500 text-sm mt-1 hidden"></div>
+                <div class="text-gray-300 text-sm mt-1">
+                    Password must contain:
+                    <ul class="list-disc list-inside">
+                        <li id="lengthCheck">At least 8 characters</li>
+                        <li id="upperCheck">One uppercase letter</li>
+                        <li id="lowerCheck">One lowercase letter</li>
+                        <li id="numberCheck">One number</li>
+                        <li id="specialCheck">One special character</li>
+                    </ul>
+                </div>
+            </div>
+            <div>
+                <label for="confirm_password" class="block text-white text-sm font-medium mb-1">Confirm Password</label>
+                <input type="password" 
+                       id="confirm_password" 
+                       name="confirm_password" 
+                       class="w-full px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                       required>
+                <div id="confirmPasswordError" class="text-red-500 text-sm mt-1 hidden"></div>
+            </div>
+            <div>
+                <button type="submit" 
+                        class="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    Register
+                </button>
+            </div>
+        </form>
+        
+        <div class="mt-4 text-center">
+            <p class="text-white">Already have an account? <a href="{% url 'weather:login' %}" class="text-blue-400 hover:text-blue-300">Login here</a></p>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('registerForm');
+    const username = document.getElementById('username');
+    const email = document.getElementById('email');
+    const password = document.getElementById('password');
+    const confirmPassword = document.getElementById('confirm_password');
+    
+    // Password requirement checks
+    const lengthCheck = document.getElementById('lengthCheck');
+    const upperCheck = document.getElementById('upperCheck');
+    const lowerCheck = document.getElementById('lowerCheck');
+    const numberCheck = document.getElementById('numberCheck');
+    const specialCheck = document.getElementById('specialCheck');
+    
+    function updatePasswordChecks() {
+        const value = password.value;
+        lengthCheck.style.color = value.length >= 8 ? '#10B981' : '#EF4444';
+        upperCheck.style.color = /[A-Z]/.test(value) ? '#10B981' : '#EF4444';
+        lowerCheck.style.color = /[a-z]/.test(value) ? '#10B981' : '#EF4444';
+        numberCheck.style.color = /[0-9]/.test(value) ? '#10B981' : '#EF4444';
+        specialCheck.style.color = /[!@#$%^&*(),.?":{}|<>]/.test(value) ? '#10B981' : '#EF4444';
+    }
+    
+    password.addEventListener('input', updatePasswordChecks);
+    
+    // Username validation
+    username.addEventListener('input', function() {
+        const value = this.value;
+        const error = document.getElementById('usernameError');
+        
+        if (value.length < 3) {
+            error.textContent = 'Username must be at least 3 characters long';
+            error.classList.remove('hidden');
+        } else if (!/^[a-zA-Z0-9_]+$/.test(value)) {
+            error.textContent = 'Username can only contain letters, numbers, and underscores';
+            error.classList.remove('hidden');
+        } else {
+            error.classList.add('hidden');
+        }
+    });
+    
+    // Email validation
+    email.addEventListener('input', function() {
+        const value = this.value;
+        const error = document.getElementById('emailError');
+        
+        if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(value)) {
+            error.textContent = 'Please enter a valid email address';
+            error.classList.remove('hidden');
+        } else {
+            error.classList.add('hidden');
+        }
+    });
+    
+    // Password validation
+    password.addEventListener('input', function() {
+        const error = document.getElementById('passwordError');
+        updatePasswordChecks();
+        
+        if (this.value.length < 8) {
+            error.textContent = 'Password must be at least 8 characters long';
+            error.classList.remove('hidden');
+        } else if (!/[A-Z]/.test(this.value)) {
+            error.textContent = 'Password must contain at least one uppercase letter';
+            error.classList.remove('hidden');
+        } else if (!/[a-z]/.test(this.value)) {
+            error.textContent = 'Password must contain at least one lowercase letter';
+            error.classList.remove('hidden');
+        } else if (!/[0-9]/.test(this.value)) {
+            error.textContent = 'Password must contain at least one number';
+            error.classList.remove('hidden');
+        } else if (!/[!@#$%^&*(),.?":{}|<>]/.test(this.value)) {
+            error.textContent = 'Password must contain at least one special character';
+            error.classList.remove('hidden');
+        } else {
+            error.classList.add('hidden');
+        }
+    });
+    
+    // Confirm password validation
+    confirmPassword.addEventListener('input', function() {
+        const error = document.getElementById('confirmPasswordError');
+        
+        if (this.value !== password.value) {
+            error.textContent = 'Passwords do not match';
+            error.classList.remove('hidden');
+        } else {
+            error.classList.add('hidden');
+        }
+    });
+    
+    // Form submission validation
+    form.addEventListener('submit', function(e) {
+        let isValid = true;
+        
+        // Trigger all validations
+        username.dispatchEvent(new Event('input'));
+        email.dispatchEvent(new Event('input'));
+        password.dispatchEvent(new Event('input'));
+        confirmPassword.dispatchEvent(new Event('input'));
+        
+        // Check if any error messages are visible
+        const errors = document.querySelectorAll('.text-red-500:not(.hidden)');
+        if (errors.length > 0) {
+            isValid = false;
+        }
+        
+        if (!isValid) {
+            e.preventDefault();
+        }
+    });
+});
+</script>
+{% endblock %} 

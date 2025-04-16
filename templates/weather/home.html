@@ -1,0 +1,396 @@
+{% extends 'weather/base.html' %}
+
+
+{% block content %}
+<div class="max-w-3xl mx-auto px-4 py-4">
+    <!-- Search Form -->
+    <div class="glass-effect rounded-lg shadow-lg p-4 mb-6">
+        <form method="GET" class="flex gap-2">
+            <input type="text" 
+                   name="city" 
+                   placeholder="Enter city (e.g., London,UK or Paris,FR)" 
+                   class="flex-1 px-3 py-1.5 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                   required>
+            <button type="submit" 
+                    class="px-4 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                Search
+            </button>
+        </form>
+        
+        {% if request.user.is_authenticated and favorite_cities %}
+        <div class="mt-4">
+            <h3 class="text-white text-sm font-medium mb-2">Your Favorite Cities:</h3>
+            <div class="flex flex-wrap gap-2">
+                {% for favorite in favorite_cities %}
+                    <a href="?city={% if favorite.country_code %}{{ favorite.city_name }},{{ favorite.country_code }}{% else %}{{ favorite.city_name }}{% endif %}" 
+                       class="px-3 py-1 bg-blue-500 bg-opacity-50 text-white rounded-lg hover:bg-opacity-70 transition-colors text-sm">
+                        {% if favorite.country_code %}
+                            {{ favorite.city_name }}, {{ favorite.country_code }}
+                        {% else %}
+                            {{ favorite.city_name }}
+                        {% endif %}
+                    </a>
+                {% endfor %}
+                <a href="{% url 'weather:favorites' %}" class="px-3 py-1 bg-blue-500 bg-opacity-50 text-white rounded-lg hover:bg-opacity-70 transition-colors text-sm">
+                    View All
+                </a>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    {% if error_message %}
+    <div class="bg-red-100 border border-red-400 text-red-700 px-4 py-2 rounded-lg mb-6">
+        {{ error_message }}
+    </div>
+    {% endif %}
+
+    {% if weather %}
+    <div class="glass-effect rounded-lg shadow-lg p-4">
+        <div class="text-center mb-4">
+            <div class="flex justify-between items-center mb-2">
+                <h2 class="text-2xl font-bold text-white">{{ weather.name }}, {{ weather.sys.country_name }}</h2>
+                {% if request.user.is_authenticated %}
+                    <div>
+                        {% if weather.is_favorite %}
+                            <button onclick="removeFromFavorites('{{ weather.name }}', '{{ weather.sys.country }}')" 
+                                    class="px-3 py-1 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors text-sm">
+                                Remove from Favorites
+                            </button>
+                        {% else %}
+                            <button onclick="addToFavorites('{{ weather.name }}', '{{ weather.sys.country }}')" 
+                                    class="px-3 py-1 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm">
+                                Add to Favorites
+                            </button>
+                        {% endif %}
+                    </div>
+                {% endif %}
+            </div>
+            <div class="flex items-center justify-center my-2">
+                {% if weather.weather.0.main == 'Clear' %}
+                    <span class="text-5xl">☀️</span>
+                {% elif weather.weather.0.main == 'Clouds' %}
+                    <span class="text-5xl">⛅</span>
+                {% elif weather.weather.0.main == 'Rain' %}
+                    <span class="text-5xl">🌧️</span>
+                {% elif weather.weather.0.main == 'Snow' %}
+                    <span class="text-5xl">🌨️</span>
+                {% elif weather.weather.0.main == 'Thunderstorm' %}
+                    <span class="text-5xl">⛈️</span>
+                {% elif weather.weather.0.main == 'Drizzle' %}
+                    <span class="text-5xl">🌦️</span>
+                {% else %}
+                    <span class="text-5xl">🌤️</span>
+                {% endif %}
+                <div class="flex items-center space-x-3 ml-3">
+                    <div class="text-4xl font-bold text-white temperature" data-celsius="{{ weather.main.temp }}">
+                        {{ weather.main.temp }}°C
+                    </div>
+                    <button onclick="toggleTemperature()" 
+                            class="glass-effect px-3 py-1.5 rounded-lg text-white hover:bg-opacity-10 transition-all duration-300 flex items-center gap-2">
+                        <span id="temp-unit-c" class="temp-unit active">°C</span>
+                        <span class="swap-icon">⇄</span>
+                        <span id="temp-unit-f" class="temp-unit">°F</span>
+                    </button>
+                </div>
+            </div>
+            <p class="text-lg text-white capitalize weather-description">
+                {{ weather.weather.0.description }}
+            </p>
+            <p class="text-sm text-white">
+                Last updated: {% now "H:i" %}
+            </p>
+        </div>
+
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-3 text-center mb-4">
+            <div class="glass-effect rounded-lg p-3 transform hover:scale-105 transition-transform">
+                <p class="text-white text-sm">Feels Like</p>
+                <p class="text-xl font-bold text-gray-800">{{ weather.main.feels_like }}°C</p>
+            </div>
+            <div class="glass-effect rounded-lg p-3 transform hover:scale-105 transition-transform">
+                <p class="text-white text-sm">Humidity</p>
+                <p class="text-xl font-bold text-gray-800">{{ weather.main.humidity }}%</p>
+            </div>
+            <div class="glass-effect rounded-lg p-3 transform hover:scale-105 transition-transform">
+                <p class="text-white text-sm">Wind</p>
+                <p class="text-xl font-bold text-gray-800">
+                    {{ weather.wind.speed_kmh|floatformat:1 }} km/h
+                    
+                </p>
+                <p class="text-sm text-gray-300">{{ weather.wind.direction }}</p>
+            </div>
+            <div class="glass-effect rounded-lg p-3 transform hover:scale-105 transition-transform">
+                <p class="text-white text-sm">Pressure</p>
+                <p class="text-xl font-bold text-gray-800">{{ weather.main.pressure }} hPa</p>
+            </div>
+        </div>
+
+        <!-- Weather Tips -->
+        <div class="mt-4 p-3 glass-effect rounded-lg">
+            <h3 class="font-bold text-white mb-2 text-lg">Weather Tips:</h3>
+            <div class="space-y-2">
+                {% if weather.main.temp < 0 %}
+                    <p class="text-white text-sm">❄️ It's freezing! Bundle up with multiple layers and protect exposed skin.</p>
+                {% elif weather.main.temp < 10 %}
+                    <p class="text-white text-sm">🧥 It's cold outside! Don't forget to wear warm clothes.</p>
+                {% elif weather.main.temp > 30 %}
+                    <p class="text-white text-sm">🌡️ It's very hot! Stay hydrated, avoid direct sunlight, and use sun protection.</p>
+                {% elif weather.main.temp > 25 %}
+                    <p class="text-white text-sm">☀️ It's quite warm! Stay hydrated and use sun protection.</p>
+                {% endif %}
+
+                {% if weather.main.humidity > 80 %}
+                    <p class="text-white text-sm">💧 High humidity! It might feel warmer than the actual temperature.</p>
+                {% elif weather.main.humidity < 30 %}
+                    <p class="text-white text-sm">🌵 Low humidity! Stay hydrated and use moisturizer for your skin.</p>
+                {% endif %}
+
+                {% if weather.weather.0.main == 'Rain' %}
+                    <p class="text-white text-sm">☔ Don't forget your umbrella and waterproof shoes!</p>
+                {% elif weather.weather.0.main == 'Snow' %}
+                    <p class="text-white text-sm">⛷️ Perfect weather for winter activities! Watch out for icy conditions.</p>
+                {% elif weather.weather.0.main == 'Thunderstorm' %}
+                    <p class="text-white text-sm">⚡ Stay indoors and away from windows! Unplug electronic devices.</p>
+                {% elif weather.weather.0.main == 'Clouds' %}
+                    <p class="text-white text-sm">☁️ Cloudy conditions - good time for outdoor activities without direct sun.</p>
+                {% elif weather.weather.0.main == 'Clear' %}
+                    <p class="text-white text-sm">☀️ Clear skies - perfect for outdoor activities!</p>
+                {% endif %}
+
+                {% if weather.wind.speed_kmh > 30 %}
+                    <p class="text-white text-sm">🌪️ Very strong winds! Secure outdoor items and be cautious.</p>
+                {% elif weather.wind.speed_kmh > 20 %}
+                    <p class="text-white text-sm">💨 Strong winds! Secure outdoor items and hold onto your hat!</p>
+                {% elif weather.wind.speed_kmh > 10 %}
+                    <p class="text-white text-sm">🌬️ Moderate winds - might affect outdoor activities.</p>
+                {% endif %}
+
+                {% if weather.main.pressure < 1000 %}
+                    <p class="text-white text-sm">📉 Low pressure system - weather might change quickly.</p>
+                {% elif weather.main.pressure > 1020 %}
+                    <p class="text-white text-sm">📈 High pressure system - expect stable weather conditions.</p>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Additional Weather Info -->
+        <div class="mt-4 grid grid-cols-2 gap-3 text-center">
+            <div class="glass-effect rounded-lg p-3">
+                <p class="text-2xl font-bold text-white">Sunrise</p>
+                <p class="text-xl font-bold text-red-500">
+                    {{ weather.sys.sunrise_formatted }}
+                </p>
+                <p class="text-xs text-gray-300">{{ weather.timezone_name }}</p>
+            </div>
+            <div class="glass-effect rounded-lg p-3">
+                <p class="text-2xl font-bold text-white">Sunset</p>
+                <p class="text-xl font-bold text-orange-500">
+                    {{ weather.sys.sunset_formatted }}
+                </p>
+                <p class="text-xs text-gray-300">{{ weather.timezone_name }}</p>
+            </div>
+        </div>
+    </div>
+    {% else %}
+    <div class="text-center text-white">
+        {% if request.user.is_authenticated %}
+            <p class="text-xl">Welcome back, {{ request.user.username }}! Enter a city name to get the weather information</p>
+        {% else %}
+            <p class="text-xl">Enter a city name to get the weather information</p>
+            <p class="text-sm mt-2">
+                <a href="{% url 'weather:login' %}" class="text-blue-300 hover:text-blue-200">Login</a> or 
+                <a href="{% url 'weather:register' %}" class="text-blue-300 hover:text-blue-200">Register</a> 
+                to save your favorite cities
+            </p>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+
+<style>
+    .swap-icon {
+        display: inline-block;
+        transition: transform 0.3s ease;
+    }
+    
+    .temp-unit {
+        opacity: 0.5;
+        transition: all 0.3s ease;
+    }
+    
+    .temp-unit.active {
+        opacity: 1;
+        font-weight: bold;
+    }
+    
+    button:hover .swap-icon {
+        transform: rotate(180deg);
+    }
+</style>
+
+<script>
+let isCelsius = true;
+
+function toggleTemperature() {
+    const tempElements = document.querySelectorAll('.temperature');
+    
+    tempElements.forEach(element => {
+        const celsius = parseInt(element.dataset.celsius);
+        const fahrenheit = Math.round((celsius * 9/5) + 32);
+        
+        if (isCelsius) {
+            // Switch to Fahrenheit
+            element.textContent = `${fahrenheit}°F`;
+        } else {
+            // Switch to Celsius
+            element.textContent = `${celsius}°C`;
+        }
+    });
+    
+    isCelsius = !isCelsius;
+}
+
+function addToFavorites(cityName, countryCode) {
+    // Validate inputs before sending
+    if (!cityName || cityName.trim() === '') {
+        alert('City name is required');
+        return;
+    }
+    
+    if (cityName.length > 100) {
+        alert('City name is too long');
+        return;
+    }
+    
+    if (!/^[a-zA-Z0-9\s]+$/.test(cityName)) {
+        alert('City name contains invalid characters. Please use only letters, numbers, and spaces.');
+        return;
+    }
+    
+    if (countryCode && (!/^[a-zA-Z]{2,3}$/.test(countryCode))) {
+        alert('Invalid country code. Please use a valid 2-3 letter country code.');
+        return;
+    }
+    
+    // Show loading indicator
+    const button = event.target;
+    const originalText = button.textContent;
+    button.disabled = true;
+    button.textContent = 'Adding...';
+    
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    fetch('/weather/add-favorite/', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+            'X-CSRFToken': csrfToken,
+        },
+        body: `city_name=${encodeURIComponent(cityName)}&country_code=${encodeURIComponent(countryCode)}`,
+        credentials: 'same-origin'
+    })
+    .then(response => {
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            // Show success message
+            const successMessage = document.createElement('div');
+            successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+            successMessage.textContent = 'City added to favorites!';
+            document.body.appendChild(successMessage);
+            
+            // Remove message after 3 seconds
+            setTimeout(() => {
+                successMessage.remove();
+                location.reload();
+            }, 1500);
+        } else {
+            // Show error message
+            alert('Error adding to favorites: ' + data.message);
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('An error occurred while adding to favorites.');
+        button.disabled = false;
+        button.textContent = originalText;
+    });
+}
+
+function removeFromFavorites(cityName, countryCode) {
+    if (confirm('Are you sure you want to remove this city from your favorites?')) {
+        // Show loading indicator
+        const button = event.target;
+        const originalText = button.textContent;
+        button.disabled = true;
+        button.textContent = 'Removing...';
+        
+        // Find the favorite ID from the page
+        const favoriteLinks = document.querySelectorAll('a[href*="city="]');
+        let favoriteId = null;
+        
+        for (const link of favoriteLinks) {
+            const href = link.getAttribute('href');
+            const cityParam = href.split('city=')[1];
+            const [linkCityName, linkCountryCode] = cityParam.split(',');
+            
+            if (linkCityName === cityName && (!linkCountryCode || linkCountryCode === countryCode)) {
+                // Extract the ID from the data attribute if available
+                favoriteId = link.getAttribute('data-favorite-id');
+                break;
+            }
+        }
+        
+        if (favoriteId) {
+            fetch(`/weather/remove-favorite/${favoriteId}/`, {
+                method: 'POST',
+                headers: {
+                    'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+                },
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.status === 'success') {
+                    // Show success message
+                    const successMessage = document.createElement('div');
+                    successMessage.className = 'fixed top-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg z-50';
+                    successMessage.textContent = 'City removed from favorites!';
+                    document.body.appendChild(successMessage);
+                    
+                    // Remove message after 3 seconds
+                    setTimeout(() => {
+                        successMessage.remove();
+                        location.reload();
+                    }, 1500);
+                } else {
+                    // Show error message
+                    alert('Error removing favorite: ' + data.message);
+                    button.disabled = false;
+                    button.textContent = originalText;
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                alert('An error occurred while removing the favorite.');
+                button.disabled = false;
+                button.textContent = originalText;
+            });
+        } else {
+            alert('Could not find the favorite to remove.');
+            button.disabled = false;
+            button.textContent = originalText;
+        }
+    }
+}
+</script>
+{% endblock %} 
